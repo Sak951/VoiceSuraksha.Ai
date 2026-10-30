@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoiceSuraksha.Ai — Synthetic Voice Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090f;--card:#0e1220;--line:#1c2338;--tx:#e8ecf8;--mut:#7d88a8;--ac:#6ea8ff;--ac2:#8b5cf6;--ok:#34d399;--bad:#fb5a7a}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--tx);font-family:'Space Grotesk',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+.glow{position:fixed;inset:0;pointer-events:none;background:radial-gradient(600px 400px at 15% -5%,rgba(110,168,255,.18),transparent),radial-gradient(500px 400px at 90% 10%,rgba(139,92,246,.16),transparent)}
+.grid{position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:48px 48px;opacity:.25;mask-image:radial-gradient(ellipse at top,#000 20%,transparent 75%)}
+nav{position:relative;display:flex;justify-content:space-between;align-items:center;max-width:1040px;margin:0 auto;padding:22px 24px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px;letter-spacing:-.3px}
+.logo i{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--ac),var(--ac2));display:grid;place-items:center;box-shadow:0 0 24px rgba(110,168,255,.45)}
+.logo svg{width:17px;height:17px}
+.pill{font:500 12px 'JetBrains Mono',monospace;color:var(--mut);border:1px solid var(--line);padding:6px 12px;border-radius:99px;display:flex;align-items:center;gap:7px}
+.pill b{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+main{position:relative;max-width:1040px;margin:0 auto;padding:30px 24px 80px}
+h1{font-size:clamp(34px,6vw,58px);line-height:1.04;letter-spacing:-1.8px;font-weight:700;max-width:760px}
+h1 span{background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);margin:18px 0 38px;font-size:17px;max-width:560px;line-height:1.55}
+.panel{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:22px;padding:26px;backdrop-filter:blur(8px)}
+.drop{border:1.5px dashed #2a3452;border-radius:16px;padding:42px 20px;text-align:center;cursor:pointer;transition:.2s}
+.drop:hover,.drop.on{border-color:var(--ac);background:rgba(110,168,255,.06)}
+.drop h3{font-size:18px;margin:12px 0 4px}.drop p{color:var(--mut);font-size:14px}
+.drop svg{width:38px;height:38px;stroke:var(--ac)}
+.row{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+button{font:600 14px 'Space Grotesk';border:1px solid var(--line);background:#121832;color:var(--tx);padding:12px 20px;border-radius:12px;cursor:pointer;transition:.18s;display:flex;align-items:center;gap:8px}
+button:hover{border-color:var(--ac);transform:translateY(-1px)}
+button.pri{background:linear-gradient(135deg,var(--ac),var(--ac2));border:0;color:#fff;box-shadow:0 8px 28px rgba(110,168,255,.28)}
+button:disabled{opacity:.4;pointer-events:none}
+button.rec.live{border-color:var(--bad);color:var(--bad)}
+button.rec.live i{background:var(--bad);animation:pulse 1s infinite}
+button i{width:9px;height:9px;border-radius:50%;background:var(--bad)}
+@keyframes pulse{50%{opacity:.25}}
+.wave{display:none;margin-top:22px}
+.wave.show{display:block}
+.fname{display:flex;justify-content:space-between;font:12px 'JetBrains Mono';color:var(--mut);margin-bottom:8px}
+canvas{width:100%;height:110px;background:#0a0e1b;border:1px solid var(--line);border-radius:14px;display:block}
+.scan{display:none;margin-top:22px}
+.scan.show{display:block}
+.bar{height:5px;background:#151b30;border-radius:9px;overflow:hidden}
+.bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--ac),var(--ac2));transition:width .35s}
+.steps{margin-top:14px;display:grid;gap:8px;font:13px 'JetBrains Mono'}
+.steps div{color:#4b5578;display:flex;gap:9px;align-items:center;transition:.25s}
+.steps div.act{color:var(--ac)}.steps div.done{color:var(--ok)}
+.steps div:before{content:'○'}.steps div.act:before{content:'◌';animation:pulse .8s infinite}.steps div.done:before{content:'●'}
+.result{display:none;margin-top:24px;border-radius:18px;padding:26px;border:1px solid;animation:rise .5s ease}
+.result.show{display:block}
+.result.human{border-color:rgba(52,211,153,.4);background:linear-gradient(180deg,rgba(52,211,153,.1),rgba(52,211,153,.02))}
+.result.ai{border-color:rgba(251,90,122,.45);background:linear-gradient(180deg,rgba(251,90,122,.12),rgba(251,90,122,.02))}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.vhead{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.badge{width:62px;height:62px;border-radius:18px;display:grid;place-items:center}
+.human .badge{background:rgba(52,211,153,.18);color:var(--ok)}.ai .badge{background:rgba(251,90,122,.18);color:var(--bad)}
+.badge svg{width:30px;height:30px}
+.vt small{font:500 12px 'JetBrains Mono';color:var(--mut);letter-spacing:1px}
+.vt h2{font-size:32px;letter-spacing:-.8px;margin-top:2px}
+.human h2{color:var(--ok)}.ai h2{color:var(--bad)}
+.conf{margin-left:auto;text-align:right}
+.conf b{font-size:38px;letter-spacing:-1px}.conf small{display:block;color:var(--mut);font-size:12px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 26px;margin-top:24px}
+.m span{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin-bottom:7px}
+.m span b{color:var(--tx);font-family:'JetBrains Mono';font-weight:500}
+.m .bar>div{transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.human .m .bar>div{background:var(--ok)}.ai .m .bar>div{background:var(--bad)}
+.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:44px}
+.f{border:1px solid var(--line);border-radius:16px;padding:20px;background:rgba(255,255,255,.015)}
+.f h4{font-size:15px;margin-bottom:6px}.f p{font-size:13.5px;color:var(--mut);line-height:1.5}
+footer{text-align:center;color:#4b5578;font-size:12px;padding:20px}
+
+.live{margin-top:22px}
+.lhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.lhead h3{font-size:18px}.lhead p{color:var(--mut);font-size:13px;margin-top:3px}
+.lstat{font:500 12px 'JetBrains Mono';padding:6px 12px;border-radius:99px;border:1px solid var(--line);color:var(--mut)}
+.lstat.on{color:var(--ac);border-color:rgba(110,168,255,.5)}
+.lbody{display:none}.lbody.show{display:block}
+.lcv{height:130px}
+.gauge{margin-top:18px;padding:20px;border:1px solid var(--line);border-radius:16px;background:#0a0e1b;transition:border-color .4s,background .4s}
+.gauge.human{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.05)}
+.gauge.ai{border-color:rgba(251,90,122,.45);background:rgba(251,90,122,.06)}
+.gtop{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.gtop small{font:500 11px 'JetBrains Mono';color:var(--mut);letter-spacing:1px}
+.gv{font-size:28px;font-weight:700;letter-spacing:-.6px;margin-top:2px;transition:color .3s}
+.gauge.human .gv{color:var(--ok)}.gauge.ai .gv{color:var(--bad)}
+.gp{font-size:34px;font-weight:700;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.track{position:relative;height:10px;border-radius:9px;margin-top:16px;background:linear-gradient(90deg,var(--ok),#facc15 50%,var(--bad));opacity:.9}
+.knob{position:absolute;top:50%;left:50%;width:20px;height:20px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 0 4px rgba(255,255,255,.15),0 4px 14px rgba(0,0,0,.5);transition:left .35s cubic-bezier(.3,.8,.3,1)}
+.tl{display:flex;justify-content:space-between;font:11px 'JetBrains Mono';color:var(--mut);margin-top:8px}
+.tline{display:flex;gap:2px;height:26px;margin-top:16px;align-items:flex-end}
+.tline i{flex:1;border-radius:2px;background:#1a2140;min-height:4px;transition:height .3s}
+.lm{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.lm div{border:1px solid var(--line);border-radius:12px;padding:12px;font-size:12px;color:var(--mut)}
+.lm b{display:block;color:var(--tx);font:500 18px 'JetBrains Mono';margin-top:4px}
+@media(max-width:560px){.lm{grid-template-columns:1fr}}
+
+.toast{position:fixed;top:-120px;left:50%;transform:translateX(-50%);z-index:9;background:linear-gradient(135deg,#7f1d3a,#be123c);border:1px solid #fb5a7a;padding:16px 24px;border-radius:16px;font-weight:600;box-shadow:0 20px 60px rgba(251,90,122,.45);transition:top .5s cubic-bezier(.2,1.3,.4,1);max-width:92vw}
+.toast.on{top:20px;animation:shake .5s .4s}
+@keyframes shake{25%{transform:translateX(-52%)}75%{transform:translateX(-48%)}}
+.hist{display:grid;gap:8px;margin-top:18px}.hi{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:11px 14px;font:13px 'JetBrains Mono';color:var(--mut)}
+.hi b{padding:3px 10px;border-radius:99px;font-size:11px}.hi .ai{background:rgba(251,90,122,.18);color:var(--bad)}.hi .human{background:rgba(52,211,153,.18);color:var(--ok)}
+.dev{margin-top:22px}.tabs{display:flex;gap:8px;margin:14px 0}.tabs button{padding:8px 14px;font-size:13px}.tabs button.a{border-color:var(--ac);color:var(--ac)}
+pre{background:#0a0e1b;border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font:12.5px/1.6 'JetBrains Mono';color:#b9c4e6;position:relative;white-space:pre}
+
+</style>
+</head>
+<body>
+<div class="grid"></div><div class="glow"></div>
+<nav>
+  <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M4 12v0M8 8v8M12 4v16M16 8v8M20 12v0"/></svg></i>VoiceSuraksha<span style="color:var(--ac)">.Ai</span></div>
+  <div style="display:flex;gap:10px"><button id="lg" style="padding:6px 14px">हिं</button><div class="pill"><b></b>Engine online</div></div>
+</nav>
+<main>
+  <h1 id="h1">Catch cloned voices <span>before they catch you.</span></h1>
+  <p class="sub" id="sb">Upload or record any audio or video clip. Our model inspects spectral, prosodic and vocoder signatures to tell real voices from AI-generated speech.</p>
+
+  <div class="panel">
+    <div class="drop" id="drop">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5l5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+      <h3>Drop audio or video here</h3>
+      <p>MP3, WAV, M4A, MP4, WEBM — or click to browse</p>
+      <input type="file" id="file" accept="audio/*,video/*" hidden>
+    </div>
+    <div class="row">
+      <button class="rec" id="rec"><i></i><span>Record voice</span></button>
+      <button class="pri" id="go" disabled>Analyze voice →</button>
+    </div>
+
+    <div class="wave" id="wave">
+      <div class="fname"><span id="fn">—</span><span id="dur">—</span></div>
+      <canvas id="cv" width="1000" height="220"></canvas>
+    </div>
+
+    <div class="scan" id="scan">
+      <div class="bar"><div id="pb"></div></div>
+      <div class="steps" id="steps">
+        <div>Decoding &amp; normalizing audio</div>
+        <div>Extracting mel-spectrogram features</div>
+        <div>Scanning vocoder &amp; codec artifacts</div>
+        <div>Modeling prosody &amp; breathing patterns</div>
+        <div>Computing final verdict</div>
+      </div>
+    </div>
+
+    <div class="result" id="res">
+      <div class="vhead">
+        <div class="badge" id="badge"></div>
+        <div class="vt"><small>VERDICT</small><h2 id="vt">—</h2></div>
+        <div class="conf"><b id="cf">—</b><small>confidence</small></div>
+      </div>
+      <div class="metrics" id="mt"></div>
+    </div>
+  </div>
+
+
+  <div class="panel live">
+    <div class="lhead">
+      <div><h3>Live stream analysis</h3><p>Speak into your mic. Voice is scored continuously, in real time.</p></div>
+      <div style="display:flex;gap:10px;align-items:center"><span class="lstat" id="lstat">Idle</span><button class="pri" id="lbtn">Start live detection</button></div>
+    </div>
+    <div class="lbody" id="lbody">
+      <canvas id="lcv" class="lcv" width="1000" height="260"></canvas>
+      <div class="gauge" id="gauge">
+        <div class="gtop"><div><small>LIVE VERDICT</small><div class="gv" id="gv">Listening…</div></div><div class="gp" id="gp">—</div></div>
+        <div class="track"><div class="knob" id="knob"></div></div>
+        <div class="tl"><span>HUMAN</span><span>AI-GENERATED</span></div>
+        <div class="tline" id="tline"></div>
+        <div class="lm">
+          <div>Spectral artifacts<b id="m1">—</b></div>
+          <div>Vocoder signature<b id="m2">—</b></div>
+          <div>Prosody naturalness<b id="m3">—</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="panel live"><h3>Recent scans</h3><div class="hist" id="hist"><div class="hi">No scans yet</div></div></div>
+  <div class="panel dev"><div class="lhead"><div><h3>Build with our API</h3><p>Fetch results straight into your app — REST, live polling and SSE stream.</p></div><a href="/docs" style="color:var(--ac);font-size:13px">Full docs →</a></div>
+    <div class="tabs" id="tabs"><button class="a" data-k="curl">cURL</button><button data-k="js">JavaScript</button><button data-k="dart">Flutter</button><button data-k="sse">Live stream</button></div>
+    <pre id="code"></pre></div>
+  <div class="toast" id="toast">⚠ Synthetic voice detected — possible scam call. Do not share OTP or money.</div>
+
+  <div class="feats">
+    <div class="f"><h4>Spectral forensics</h4><p>Detects over-smooth harmonics and phase patterns left by neural vocoders.</p></div>
+    <div class="f"><h4>Prosody modeling</h4><p>Measures natural rhythm, stress and micro-pauses that synthetic speech lacks.</p></div>
+    <div class="f"><h4>Works on video</h4><p>Extracts the audio track automatically from common video formats.</p></div>
+  </div>
+</main>
+<footer>© 2026 VoiceSuraksha.Ai · <a href="/docs" style="color:var(--ac)">API docs</a></footer>
+
+<script>
+const $=id=>document.getElementById(id);
+let blob=null, mediaRec=null, chunks=[], stream=null;
+const ctx2d=$('cv').getContext('2d');
+
+$('drop').onclick=()=>$('file').click();
+['dragover','dragenter'].forEach(e=>$('drop').addEventListener(e,ev=>{ev.preventDefault();$('drop').classList.add('on')}));
+['dragleave','drop'].forEach(e=>$('drop').addEventListener(e,ev=>{ev.preventDefault();$('drop').classList.remove('on')}));
+$('drop').addEventListener('drop',e=>{if(e.dataTransfer.files[0])load(e.dataTransfer.files[0])});
+$('file').onchange=e=>{if(e.target.files[0])load(e.target.files[0])};
+
+async function load(f){
+  blob=f; reset();
+  $('fn').textContent=f.name||'recording';
+  $('wave').classList.add('show'); $('go').disabled=false;
+  try{
+    const ac=new (window.AudioContext||window.webkitAudioContext)();
+    const buf=await ac.decodeAudioData(await f.arrayBuffer());
+    $('dur').textContent=buf.duration.toFixed(1)+'s · '+buf.sampleRate/1000+' kHz';
+    draw(buf.getChannelData(0));
+  }catch(e){ $('dur').textContent=(f.size/1024).toFixed(0)+' KB'; draw(null); }
+}
+function draw(d){
+  const c=$('cv'),w=c.width,h=c.height;ctx2d.clearRect(0,0,w,h);
+  const g=ctx2d.createLinearGradient(0,0,w,0);g.addColorStop(0,'#6ea8ff');g.addColorStop(1,'#8b5cf6');
+  ctx2d.fillStyle=g;const n=150,bw=w/n;
+  for(let i=0;i<n;i++){
+    let v;
+    if(d){const s=Math.floor(i*d.length/n),e=Math.floor((i+1)*d.length/n);let m=0;for(let j=s;j<e;j+=Math.max(1,(e-s)>>6))m=Math.max(m,Math.abs(d[j]));v=m}
+    else v=.15+.6*Math.abs(Math.sin(i*.37)*Math.cos(i*.11));
+    const bh=Math.max(4,v*h*.92);
+    ctx2d.beginPath();ctx2d.roundRect(i*bw+1,(h-bh)/2,bw-3,bh,3);ctx2d.fill();
+  }
+}
+function reset(){$('res').classList.remove('show');$('scan').classList.remove('show');$('pb').style.width='0'}
+
+$('rec').onclick=async()=>{
+  if(mediaRec&&mediaRec.state==='recording'){mediaRec.stop();return}
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){alert('Microphone access denied');return}
+  chunks=[];mediaRec=new MediaRecorder(stream);
+  mediaRec.ondataavailable=e=>chunks.push(e.data);
+  mediaRec.onstop=()=>{stream.getTracks().forEach(t=>t.stop());$('rec').classList.remove('live');$('rec').querySelector('span').textContent='Record voice';
+    const b=new Blob(chunks,{type:mediaRec.mimeType});b.name='recording';load(b)};
+  mediaRec.start();$('rec').classList.add('live');$('rec').querySelector('span').textContent='Stop recording';
+};
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+$('go').onclick=async()=>{
+  $('go').disabled=true;reset();$('scan').classList.add('show');
+  const st=[...$('steps').children];st.forEach(s=>s.className='');
+  const req=fetch('/api/v1/analyze',{method:'POST'}).then(r=>r.json());
+  for(let i=0;i<st.length;i++){
+    st[i].className='act';$('pb').style.width=((i+.6)/st.length*100)+'%';
+    await sleep(650+Math.random()*700);st[i].className='done';
+  }
+  $('pb').style.width='100%';
+  const d=await req;await sleep(250);show(d);$('go').disabled=false;
+};
+
+function show(d){
+  const r=$('res');r.className='result show '+d.verdict;
+  $('vt').textContent=d.verdict==='ai'?T('ai'):T('hu');
+  $('cf').textContent=d.confidence+'%';
+  $('badge').innerHTML=d.verdict==='ai'
+   ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19zM12 10v4M12 17.5v.01"/></svg>'
+   :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  $('mt').innerHTML=d.metrics.map(m=>`<div class="m"><span>${m.label}<b>${m.value}%</b></span><div class="bar"><div style="width:0" data-w="${m.value}"></div></div></div>`).join('');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>$('mt').querySelectorAll('.bar>div').forEach(b=>b.style.width=b.dataset.w+'%')));
+  r.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+// ---------- LIVE ----------
+let L={on:false,ac:null,an:null,st:null,raf:0,tick:0,p:50,seen:false,hist:[]};
+const NB=60;
+$('tline').innerHTML='<i></i>'.repeat(NB);
+$('lbtn').onclick=async()=>{L.on?stopLive():startLive()};
+async function startLive(){
+  try{L.st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false}})}catch(e){alert('Microphone access denied');return}
+  L.ac=new (window.AudioContext||window.webkitAudioContext)();
+  const src=L.ac.createMediaStreamSource(L.st);
+  L.an=L.ac.createAnalyser();L.an.fftSize=1024;L.an.smoothingTimeConstant=.78;src.connect(L.an);
+  L.on=true;L.seen=false;L.hist=[];setLive(null);
+  $('lbody').classList.add('show');$('lbtn').textContent='Stop';$('lbtn').classList.remove('pri');
+  $('lstat').textContent='● Listening';$('lstat').classList.add('on');
+  loop();L.tick=setInterval(poll,700);
+}
+function stopLive(){
+  L.on=false;cancelAnimationFrame(L.raf);clearInterval(L.tick);
+  L.st&&L.st.getTracks().forEach(t=>t.stop());L.ac&&L.ac.close();
+  $('lbtn').textContent='Start live detection';$('lbtn').classList.add('pri');
+  $('lstat').textContent='Idle';$('lstat').classList.remove('on');
+}
+function level(){
+  const t=new Uint8Array(L.an.fftSize);L.an.getByteTimeDomainData(t);
+  let s=0;for(const v of t){const x=(v-128)/128;s+=x*x}return Math.sqrt(s/t.length);
+}
+function loop(){
+  if(!L.on)return;
+  const c=$('lcv'),g=c.getContext('2d'),w=c.width,h=c.height;
+  const f=new Uint8Array(L.an.frequencyBinCount);L.an.getByteFrequencyData(f);
+  g.clearRect(0,0,w,h);
+  const n=72,bw=w/n,gr=g.createLinearGradient(0,h,0,0);
+  const ai=$('gauge').classList.contains('ai');
+  gr.addColorStop(0,ai?'#fb5a7a':'#6ea8ff');gr.addColorStop(1,ai?'#f59e0b':'#8b5cf6');
+  g.fillStyle=gr;
+  for(let i=0;i<n;i++){
+    const idx=Math.floor(Math.pow(i/n,1.7)*f.length*.55);
+    const v=f[idx]/255,bh=Math.max(4,v*h*.95);
+    g.beginPath();g.roundRect(i*bw+2,(h-bh)/2,bw-4,bh,4);g.fill();
+  }
+  L.raf=requestAnimationFrame(loop);
+}
+async function poll(){
+  if(!L.on)return;
+  const active=level()>0.012;
+  if(!active){
+    if(!L.seen){setLive(null)}else{$('lstat').textContent='● Silence';pushTl(null)}
+    return;
+  }
+  $('lstat').textContent='● Analyzing';
+  try{
+    const d=await (await fetch('/api/v1/live',{method:'POST'})).json();
+    L.seen=true;
+    L.p=L.p*.55+d.ai_prob*.45;           // smooth
+    setLive(L.p,d.metrics);pushTl(L.p);
+  }catch(e){}
+}
+function setLive(p,m){
+  const gz=$('gauge');
+  if(p==null){gz.className='gauge';$('gv').textContent='Listening…';$('gp').textContent='—';$('knob').style.left='50%';return}
+  const ai=p>=50;gz.className='gauge '+(ai?'ai':'human');
+  $('gv').textContent=ai?T('ai'):T('hu');
+  $('gp').textContent=(ai?p:100-p).toFixed(1)+'%';
+  $('knob').style.left=Math.max(3,Math.min(97,p))+'%';
+  if(m){$('m1').textContent=m.spectral+'%';$('m2').textContent=m.vocoder+'%';$('m3').textContent=m.prosody+'%'}
+}
+function pushTl(p){
+  L.hist.push(p);if(L.hist.length>NB)L.hist.shift();
+  const els=$('tline').children,off=NB-L.hist.length;
+  for(let i=0;i<NB;i++){
+    const v=L.hist[i-off];const e=els[i];
+    if(v==null||i<off){e.style.height='4px';e.style.background='#1a2140';continue}
+    e.style.height=(8+Math.abs(v-50)/50*18)+'px';
+    e.style.background=v>=50?'#fb5a7a':'#34d399';
+  }
+}
+
+// ---- i18n ----
+let lang='en';
+const D={en:{ai:'AI-generated voice',hu:'Human voice',h1:'Catch cloned voices <span>before they catch you.</span>',sb:'Upload or record any audio or video clip. Our model inspects spectral, prosodic and vocoder signatures to tell real voices from AI-generated speech.'},
+hi:{ai:'AI-निर्मित आवाज़',hu:'असली इंसानी आवाज़',h1:'नकली आवाज़ पकड़ें, <span>इससे पहले कि वो आपको ठगें।</span>',sb:'कोई भी ऑडियो या वीडियो अपलोड करें या रिकॉर्ड करें। हमारा मॉडल असली और AI से बनी आवाज़ में फ़र्क़ पहचानता है।'}};
+const T=k=>D[lang][k];
+$('lg').onclick=()=>{lang=lang==='en'?'hi':'en';$('lg').textContent=lang==='en'?'हिं':'EN';$('h1').innerHTML=T('h1');$('sb').textContent=T('sb')};
+// ---- alert ----
+function alertUser(){
+  $('toast').classList.add('on');setTimeout(()=>$('toast').classList.remove('on'),5000);
+  navigator.vibrate&&navigator.vibrate([200,100,200]);
+  try{const a=new AudioContext(),o=a.createOscillator(),g=a.createGain();o.type='square';o.frequency.value=880;g.gain.value=.06;o.connect(g);g.connect(a.destination);o.start();o.frequency.setValueAtTime(660,a.currentTime+.18);o.stop(a.currentTime+.4)}catch(e){}
+}
+const _sl=setLive;setLive=function(p,m){_sl(p,m);if(p!=null){if(p>=70&&!L.al){L.al=1;alertUser()}if(p<40)L.al=0}};
+// ---- history ----
+async function loadHist(){try{const r=await (await fetch('/api/v1/history')).json();if(!r.length)return;
+  $('hist').innerHTML=r.slice(0,5).map(x=>`<div class="hi"><span>${x.file||'recording'} · ${new Date(x.ts*1000).toLocaleTimeString()}</span><span>${x.confidence}%</span><b class="${x.verdict}">${x.verdict==='ai'?'AI':'HUMAN'}</b></div>`).join('')}catch(e){}}
+const _sh=show;show=function(d){_sh(d);loadHist()};loadHist();
+// ---- dev snippets ----
+const B=location.origin;
+const S={curl:`curl -X POST ${B}/api/v1/analyze \\\n  -H "X-API-Key: YOUR_KEY" \\\n  -F "file=@voice.mp3"`,
+js:`const fd = new FormData(); fd.append('file', audioBlob);\nconst r = await fetch('${B}/api/v1/analyze', {method:'POST', body: fd});\nconst {verdict, confidence, risk} = await r.json();`,
+dart:`final req = http.MultipartRequest('POST', Uri.parse('${B}/api/v1/analyze'))\n  ..files.add(await http.MultipartFile.fromPath('file', path));\nfinal res = await http.Response.fromStream(await req.send());\nfinal data = jsonDecode(res.body); // data['verdict'], data['confidence']`,
+sse:`const es = new EventSource('${B}/api/v1/stream');\nes.onmessage = e => {\n  const d = JSON.parse(e.data);   // {verdict, ai_prob, risk, metrics}\n  if (d.risk === 'high') showScamAlert();\n};`};
+function tab(k){$('code').textContent=S[k].replace(/\\n/g,'\n');document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('a',b.dataset.k===k))}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.k));tab('curl');
+</script>
+</body>
+</html>
