@@ -25,7 +25,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser. Microphone features require browser permission and are generally available on localhost or HTTPS.
+Open [https://choking-justify-plot.ngrok-free.dev/](https://choking-justify-plot.ngrok-free.dev/) in your browser. Microphone features require browser permission and are generally available on localhost or HTTPS.
 
 ## API
 
